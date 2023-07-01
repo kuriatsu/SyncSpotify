@@ -35,14 +35,16 @@ def sync(tracks):
             except Exception as e:
                 print(e)
 
-
 def main():
 
     playlist = "liked" if len(sys.argv) == 1 else sys.argv[1]
-    tracks = sp.current_user_saved_tracks()
+
+    if playlist == "liked":
+        tracks = sp.current_user_saved_tracks()
+    else:
+        tracks = sp.playlist(playlist)["tracks"]
+
     sync(tracks)
-
-
 
 if __name__ == "__main__":
     main()
