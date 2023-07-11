@@ -5,12 +5,13 @@ import sys
 import subprocess
 import os
 
-sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id="",
-                                               client_secret="",
-                                               redirect_uri="http://localhost:8888/callback",
-                                               scope="user-library-read"))
-user = ""
-base_dir = ""
+sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
+                                    client_id=os.environ.get("CLIENT_ID"),
+                                    client_secret=os.environ.get("CLIENT_SECRET"),
+                                    redirect_uri="http://localhost:8888/callback",
+                                    scope="user-library-read"
+                                    )
+                    )
 
 def save_song(url):
     # command = ["spotify-ripper", "--flac", "-Q", "320", "-f", "{track_name}.{ext}", "-d", dir, "-l", uri]
