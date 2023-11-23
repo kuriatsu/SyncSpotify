@@ -4,6 +4,8 @@ import pickle
 import sys
 import subprocess
 import os
+from pprint import pprint
+from mutagen.mp3 import MP3
 
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
                                     client_id=os.environ.get("CLIENT_ID"),
@@ -13,28 +15,67 @@ sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
                                     )
                     )
 
-def save_song(url):
+def download(url):
     # command = ["spotify-ripper", "--flac", "-Q", "320", "-f", "{track_name}.{ext}", "-d", dir, "-l", uri]
-    command = ["spotdl", "download", url, "--overwrite skip --scan-for-songs"]
+    ## when scan and skip
+    # command = ["spotdl", "download", url, "--overwrite skip --scan-for-songs"]
+    command = ["spotdl", "download", url]
     subprocess.call(command)
 
+def save_song(item):
+    print("====================")
+
+    ## get file name
+    output_mp3_name = f"{item['track']['artists'][0]['name']}"
+    if len(item['track']['artists']) == 1:
+        output_mp3_name += f" - {item['track']['name']}.mp3" 
+    else:
+        for artist in item['track']['artists'][1:]:
+            output_mp3_name += ", " + artist["name"]
+        output_mp3_name += f" - {item['track']['name']}.mp3"
+
+
+    if not os.path.isfile(output_mp3_name):
+        output_mp3_name = f"{item['track']['artists'][0]['name']} - {item['track']['name']}.mp3"
+
+    print(f"{output_mp3_name}")
+    is_update = True
+
+    ## judge update or not
+    if os.path.isfile(output_mp3_name):
+        is_update = False
+
+        expected_duration = item['track']['duration_ms'] * 0.001 
+        try:
+            actual_duration = MP3(output_mp3_name).info.length
+            print(f"current len:{actual_duration}, expected len:{expected_duration}")
+            if expected_duration - 5.0 > actual_duration:
+                print(f"need to update")
+                os.remove(output_mp3_name)
+                is_update = True
+        except Exception as e:
+            print(e)
+            print("need to update")
+            os.remove(output_mp3_name)
+            is_update = True
+
+
+    if is_update:
+        try:
+            download(item["track"]["external_urls"]["spotify"])
+        except Exception as e:
+            print(e)
 
 def sync(tracks):
 
     download_list = "" 
     for item in tracks['items']:
-        try:
-            save_song(item["track"]["external_urls"]["spotify"])
-        except Exception as e:
-            print(e)
+        save_song(item)
 
     while tracks['next']:
         tracks = sp.next(tracks)
         for item in tracks['items']:
-            try:
-                save_song(item["track"]["external_urls"]["spotify"])
-            except Exception as e:
-                print(e)
+            save_song(item)
 
 def main():
 
